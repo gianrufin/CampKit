@@ -1,4 +1,60 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">CampKit</string>
+
+    <!-- Auth -->
+    <string name="auth_headline">Pack lighter. Camp smarter.</string>
+    <string name="auth_subhead">Organize your outdoor gear locker, calculate base pack weight, and check off every trip checklist with cloud sync.</string>
+    <string name="sign_in_with_google">Sign in with Google</string>
+    <string name="signing_in">Signing in…</string>
+    <string name="sign_out">Sign out</string>
+
+    <!-- Navigation -->
+    <string name="nav_trips">Trips</string>
+    <string name="nav_gear">Gear Locker</string>
+    <string name="nav_weight">Weight Lab</string>
+
+    <!-- Trips -->
+    <string name="trips_title">Camp Trips</string>
+    <string name="trips_empty_title">No trips planned yet</string>
+    <string name="trips_empty_body">Create a trip from scratch or load a starter kit to track your pack weight and checklist.</string>
+    <string name="new_trip">New Trip</string>
+    <string name="edit_trip">Edit Trip</string>
+    <string name="delete_trip">Delete Trip</string>
+    <string name="archive_trip">Archive</string>
+    <string name="unarchive_trip">Restore</string>
+    <string name="show_archived">Archived</string>
+
+    <!-- Trip Detail / Checklist -->
+    <string name="checklist_title">Packing Checklist</string>
+    <string name="add_packing_item">Add Item</string>
+    <string name="import_from_gear">Add from Locker</string>
+    <string name="base_weight_label">Base Weight</string>
+    <string name="worn_weight_label">Worn Weight</string>
+    <string name="total_weight_label">Total Weight</string>
+    <string name="packed_progress_label">Packed</string>
+    <string name="checklist_empty_title">Your pack is empty</string>
+    <string name="checklist_empty_body">Add gear from your locker or create custom items for this trip.</string>
+
+    <!-- Gear Locker -->
+    <string name="gear_title">Gear Locker</string>
+    <string name="add_gear">Add Gear</string>
+    <string name="edit_gear">Edit Gear</string>
+    <string name="gear_empty_title">Your gear locker is empty</string>
+    <string name="gear_empty_body">Log your tent, sleep system, stove, and essentials once—reuse them on every trip.</string>
+    <string name="load_starter_gear">Load Starter Gear</string>
+    <string name="search_gear_hint">Search gear…</string>
+
+    <!-- Weight Lab -->
+    <string name="weight_lab_title">Weight Lab</string>
+    <string name="weight_lab_subtitle">Category breakdown &amp; pack target analysis</string>
+    <string name="unit_metric">Grams / kg</string>
+    <string name="unit_imperial">Oz / lbs</string>
+
+    <!-- Common -->
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="retry">Retry</string>
+    <string name="close">Close</string>
 </resources>

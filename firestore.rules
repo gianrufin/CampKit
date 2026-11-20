@@ -1,0 +1,135 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net: default-deny all reads and writes
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidCategory(category) {
+      return category in ['SHELTER', 'SLEEP', 'COOKING', 'CLOTHING', 'HYDRATION', 'SAFETY', 'TOOLS', 'OTHER'];
+    }
+
+    function isValidTripType(tripType) {
+      return tripType in ['BACKPACKING', 'CAR_CAMPING', 'BIKEPACKING', 'DAY_HIKE'];
+    }
+
+    function isValidGearItem(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.category is string && isValidCategory(data.category) &&
+             data.weightGrams is int && data.weightGrams >= 0 && data.weightGrams <= 500000 &&
+             data.quantityOwned is int && data.quantityOwned >= 1 && data.quantityOwned <= 100 &&
+             data.essential is bool &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 300));
+    }
+
+    function isValidCampTrip(data) {
+      return data.title is string && data.title.size() >= 1 && data.title.size() <= 80 &&
+             data.location is string && data.location.size() <= 100 &&
+             data.tripType is string && isValidTripType(data.tripType) &&
+             data.nights is int && data.nights >= 0 && data.nights <= 365 &&
+             data.startDateLabel is string && data.startDateLabel.size() <= 40 &&
+             data.archived is bool &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() <= 500));
+    }
+
+    function isValidPackingItem(data) {
+      return data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+             data.category is string && isValidCategory(data.category) &&
+             data.weightGrams is int && data.weightGrams >= 0 && data.weightGrams <= 500000 &&
+             data.quantity is int && data.quantity >= 1 && data.quantity <= 100 &&
+             data.packed is bool &&
+             data.worn is bool &&
+             (!('gearId' in data) || isValidId(data.gearId));
+    }
+
+    match /users/{userId}/gear/{gearId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(gearId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(gearId) &&
+                       incoming().keys().hasAll(['name', 'category', 'weightGrams', 'quantityOwned', 'essential', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['name', 'category', 'weightGrams', 'quantityOwned', 'essential', 'notes', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidGearItem(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(gearId) &&
+                       isValidGearItem(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'weightGrams', 'quantityOwned', 'essential', 'notes', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(gearId);
+    }
+
+    match /users/{userId}/trips/{tripId} {
+      allow list: if isOwner(userId);
+      allow get: if isOwner(userId) && isValidId(tripId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(tripId) &&
+                       incoming().keys().hasAll(['title', 'location', 'tripType', 'nights', 'startDateLabel', 'archived', 'createdAt', 'updatedAt']) &&
+                       incoming().keys().hasOnly(['title', 'location', 'tripType', 'nights', 'startDateLabel', 'notes', 'archived', 'createdAt', 'updatedAt']) &&
+                       incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       isValidCampTrip(incoming());
+
+      allow update: if isOwner(userId) &&
+                       isValidId(tripId) &&
+                       isValidCampTrip(incoming()) &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                       incoming().diff(existing()).affectedKeys().hasOnly(['title', 'location', 'tripType', 'nights', 'startDateLabel', 'notes', 'archived', 'updatedAt']);
+
+      allow delete: if isOwner(userId) && isValidId(tripId);
+
+      match /items/{itemId} {
+        allow list: if isOwner(userId) && isValidId(tripId);
+        allow get: if isOwner(userId) && isValidId(tripId) && isValidId(itemId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(tripId) &&
+                         isValidId(itemId) &&
+                         incoming().keys().hasAll(['name', 'category', 'weightGrams', 'quantity', 'packed', 'worn', 'createdAt', 'updatedAt']) &&
+                         incoming().keys().hasOnly(['name', 'category', 'weightGrams', 'quantity', 'packed', 'worn', 'gearId', 'createdAt', 'updatedAt']) &&
+                         incoming().createdAt is timestamp && incoming().createdAt <= request.time &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         isValidPackingItem(incoming()) &&
+                         existsAfter(/databases/$(database)/documents/users/$(userId)/trips/$(tripId));
+
+        allow update: if isOwner(userId) &&
+                         isValidId(tripId) &&
+                         isValidId(itemId) &&
+                         isValidPackingItem(incoming()) &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().updatedAt is timestamp && incoming().updatedAt <= request.time &&
+                         incoming().diff(existing()).affectedKeys().hasOnly(['name', 'category', 'weightGrams', 'quantity', 'packed', 'worn', 'gearId', 'updatedAt']);
+
+        allow delete: if isOwner(userId) && isValidId(tripId) && isValidId(itemId);
+      }
+    }
+  }
+}

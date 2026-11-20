@@ -1,0 +1,155 @@
+{
+  "entities": {
+    "GearItem": {
+      "title": "GearItem",
+      "description": "A piece of camping equipment in the user's personal gear locker.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name of the gear item (1-80 chars)."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["SHELTER", "SLEEP", "COOKING", "CLOTHING", "HYDRATION", "SAFETY", "TOOLS", "OTHER"],
+          "description": "Gear category."
+        },
+        "weightGrams": {
+          "type": "integer",
+          "description": "Unit weight in grams (0-500000)."
+        },
+        "quantityOwned": {
+          "type": "integer",
+          "description": "Number of units owned (1-100)."
+        },
+        "essential": {
+          "type": "boolean",
+          "description": "Whether this item is marked as a core essential."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes or specs (max 300 chars)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["name", "category", "weightGrams", "quantityOwned", "essential", "createdAt", "updatedAt"]
+    },
+    "CampTrip": {
+      "title": "CampTrip",
+      "description": "A planned camping trip with packing list metadata.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Trip title (1-80 chars)."
+        },
+        "location": {
+          "type": "string",
+          "description": "Campsite or trail location (0-100 chars)."
+        },
+        "tripType": {
+          "type": "string",
+          "enum": ["BACKPACKING", "CAR_CAMPING", "BIKEPACKING", "DAY_HIKE"],
+          "description": "Type of trip."
+        },
+        "nights": {
+          "type": "integer",
+          "description": "Number of nights (0-365)."
+        },
+        "startDateLabel": {
+          "type": "string",
+          "description": "Formatted trip date label (0-40 chars)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional trip notes or permits info (max 500 chars)."
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "Whether the trip is archived."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["title", "location", "tripType", "nights", "startDateLabel", "archived", "createdAt", "updatedAt"]
+    },
+    "PackingItem": {
+      "title": "PackingItem",
+      "description": "An item on a specific camping trip's packing checklist.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Item name (1-80 chars)."
+        },
+        "category": {
+          "type": "string",
+          "enum": ["SHELTER", "SLEEP", "COOKING", "CLOTHING", "HYDRATION", "SAFETY", "TOOLS", "OTHER"],
+          "description": "Gear category."
+        },
+        "weightGrams": {
+          "type": "integer",
+          "description": "Unit weight in grams (0-500000)."
+        },
+        "quantity": {
+          "type": "integer",
+          "description": "Quantity packed for this trip (1-100)."
+        },
+        "packed": {
+          "type": "boolean",
+          "description": "Whether the item is checked off as packed."
+        },
+        "worn": {
+          "type": "boolean",
+          "description": "Whether the item is worn/carried outside base pack weight."
+        },
+        "gearId": {
+          "type": "string",
+          "description": "Optional reference to a GearItem ID."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["name", "category", "weightGrams", "quantity", "packed", "worn", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/gear/{gearId}": {
+      "schema": { "$ref": "#/entities/GearItem" },
+      "description": "User's personal camping gear locker items."
+    },
+    "/users/{userId}/trips/{tripId}": {
+      "schema": { "$ref": "#/entities/CampTrip" },
+      "description": "User's planned camping trips."
+    },
+    "/users/{userId}/trips/{tripId}/items/{itemId}": {
+      "schema": { "$ref": "#/entities/PackingItem" },
+      "description": "Packing checklist items belonging to a specific trip."
+    }
+  }
+}
