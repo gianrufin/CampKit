@@ -1,0 +1,8 @@
+{
+  "version": "2.0.1",
+  "tag": "v2.0.1",
+  "versionCode": 20001,
+  "downloadUrl": "https://github.com/gianrufin/CampKit/raw/main/releases/CampKit-v2.0.1.apk",
+  "releaseUrl": "https://github.com/gianrufin/CampKit/releases/tag/v2.0.1",
+  "notes": "CampKit v2.0.1 release with Camp Trips, Gear Locker, Weight Lab, Cloud Firestore sync, and Settings update checker."
+}

@@ -3,7 +3,10 @@ package com.example.ui.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.BuildConfig
 import com.example.data.CampRepository
+import com.example.data.UpdateCheckResult
+import com.example.data.UpdateChecker
 import com.example.model.CampTrip
 import com.example.model.GearCategory
 import com.example.model.GearItem
@@ -33,14 +36,24 @@ sealed interface UiState<out T> {
     data class Error(val message: String) : UiState<Nothing>
 }
 
+sealed interface UpdateUiState {
+    data object Idle : UpdateUiState
+    data object Checking : UpdateUiState
+    data class Completed(val result: UpdateCheckResult) : UpdateUiState
+}
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class CampViewModel(
     private val repository: CampRepository,
-    private val currentUserId: String
+    private val currentUserId: String,
+    private val updateChecker: UpdateChecker = UpdateChecker()
 ) : ViewModel() {
 
     private val _weightUnit = MutableStateFlow(WeightUnit.METRIC)
     val weightUnit: StateFlow<WeightUnit> = _weightUnit.asStateFlow()
+
+    private val _updateUiState = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
+    val updateUiState: StateFlow<UpdateUiState> = _updateUiState.asStateFlow()
 
     private val _activeTripId = MutableStateFlow<String?>(null)
     val activeTripId: StateFlow<String?> = _activeTripId.asStateFlow()
@@ -119,6 +132,22 @@ class CampViewModel(
         _weightUnit.value = when (_weightUnit.value) {
             WeightUnit.METRIC -> WeightUnit.IMPERIAL
             WeightUnit.IMPERIAL -> WeightUnit.METRIC
+        }
+    }
+
+    fun setWeightUnit(unit: WeightUnit) {
+        _weightUnit.value = unit
+    }
+
+    fun checkForUpdates() {
+        if (_updateUiState.value is UpdateUiState.Checking) return
+        _updateUiState.value = UpdateUiState.Checking
+        viewModelScope.launch {
+            val result = updateChecker.checkForUpdate(BuildConfig.VERSION_NAME)
+            _updateUiState.value = UpdateUiState.Completed(result)
+            if (result is UpdateCheckResult.UpdateAvailable) {
+                _snackbarMessage.tryEmit("CampKit ${result.release.tag} is available")
+            }
         }
     }
 

@@ -20,10 +20,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.rounded.Logout
 import androidx.compose.material.icons.rounded.Backpack
 import androidx.compose.material.icons.rounded.Explore
 import androidx.compose.material.icons.rounded.Scale
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -72,6 +72,7 @@ import com.example.ui.auth.AuthScreen
 import com.example.ui.auth.authStateFlow
 import com.example.ui.auth.signOutUser
 import com.example.ui.screens.GearLockerScreen
+import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.TripDetailScreen
 import com.example.ui.screens.TripsScreen
 import com.example.ui.screens.WeightLabScreen
@@ -95,6 +96,9 @@ object WeightLabRoute
 
 @Serializable
 data class TripDetailRoute(val tripId: String)
+
+@Serializable
+object SettingsRoute
 
 private data class TopTab(
     val labelRes: Int,
@@ -124,14 +128,22 @@ fun AppNavigation(auth: FirebaseAuth = Firebase.auth) {
         AuthScreen(onAuthSuccess = {})
     } else {
         key(user.uid) {
-            AuthenticatedCampShell(currentUserId = user.uid)
+            AuthenticatedCampShell(
+                currentUserId = user.uid,
+                userEmail = user.email,
+                userDisplayName = user.displayName
+            )
         }
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AuthenticatedCampShell(currentUserId: String) {
+private fun AuthenticatedCampShell(
+    currentUserId: String,
+    userEmail: String?,
+    userDisplayName: String?
+) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val credentialManager = remember(context) { CredentialManager.create(context) }
@@ -161,6 +173,11 @@ private fun AuthenticatedCampShell(currentUserId: String) {
     val gearSearch by viewModel.gearSearchQuery.collectAsStateWithLifecycle()
     val gearCategory by viewModel.gearCategoryFilter.collectAsStateWithLifecycle()
     val showArchived by viewModel.showArchivedTrips.collectAsStateWithLifecycle()
+    val updateUiState by viewModel.updateUiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(currentUserId) {
+        viewModel.checkForUpdates()
+    }
 
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(viewModel) {
@@ -172,7 +189,8 @@ private fun AuthenticatedCampShell(currentUserId: String) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDest = backStackEntry?.destination
-    val isDetailRoute = currentDest?.hasRoute<TripDetailRoute>() == true
+    val isFullPageSubRoute = currentDest?.hasRoute<TripDetailRoute>() == true ||
+        currentDest?.hasRoute<SettingsRoute>() == true
 
     val topTabs = remember {
         listOf(
@@ -190,7 +208,7 @@ private fun AuthenticatedCampShell(currentUserId: String) {
             contentWindowInsets = WindowInsets.safeDrawing,
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
-                if (!isDetailRoute) {
+                if (!isFullPageSubRoute) {
                     TopAppBar(
                         title = {
                             Row(
@@ -212,19 +230,14 @@ private fun AuthenticatedCampShell(currentUserId: String) {
                         },
                         actions = {
                             IconButton(
-                                onClick = {
-                                    signOutUser(
-                                        credentialManager = credentialManager,
-                                        scope = scope
-                                    )
-                                },
+                                onClick = { navController.navigate(SettingsRoute) },
                                 modifier = Modifier
                                     .minimumInteractiveComponentSize()
-                                    .testTag("sign_out_button")
+                                    .testTag("settings_button")
                             ) {
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Rounded.Logout,
-                                    contentDescription = stringResource(R.string.sign_out)
+                                    imageVector = Icons.Rounded.Settings,
+                                    contentDescription = stringResource(R.string.settings_title)
                                 )
                             }
                         },
@@ -235,7 +248,7 @@ private fun AuthenticatedCampShell(currentUserId: String) {
                 }
             },
             bottomBar = {
-                if (!useRail && !isDetailRoute) {
+                if (!useRail && !isFullPageSubRoute) {
                     NavigationBar(
                         windowInsets = WindowInsets.navigationBars,
                         containerColor = MaterialTheme.colorScheme.surface
@@ -277,7 +290,7 @@ private fun AuthenticatedCampShell(currentUserId: String) {
                     .fillMaxSize()
                     .padding(innerPadding)
             ) {
-                if (useRail && !isDetailRoute) {
+                if (useRail && !isFullPageSubRoute) {
                     NavigationRail(
                         modifier = Modifier
                             .fillMaxHeight()
@@ -413,6 +426,24 @@ private fun AuthenticatedCampShell(currentUserId: String) {
                                 weightUnit = weightUnit,
                                 onSelectTripForAnalysis = viewModel::selectTrip,
                                 onToggleUnit = viewModel::toggleWeightUnit
+                            )
+                        }
+
+                        composable<SettingsRoute> {
+                            SettingsScreen(
+                                userEmail = userEmail,
+                                userDisplayName = userDisplayName,
+                                weightUnit = weightUnit,
+                                updateUiState = updateUiState,
+                                onBack = { navController.popBackStack() },
+                                onSelectWeightUnit = viewModel::setWeightUnit,
+                                onCheckForUpdate = viewModel::checkForUpdates,
+                                onSignOut = {
+                                    signOutUser(
+                                        credentialManager = credentialManager,
+                                        scope = scope
+                                    )
+                                }
                             )
                         }
                     }
